@@ -5,13 +5,17 @@ on:
   
 jobs:
 
-  scan:
-    name: Deploy Infra
+  validate:
+    name: Terraform Validate
     runs-on: ubuntu-latest
+    continue-on-error: true
     environment: dev
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: HashiCorp - Setup Terraform
+        uses: hashicorp/setup-terraform@v3.1.2
 
       - uses: actions/cache@v4
         name: Cache plugin dir
@@ -23,6 +27,18 @@ jobs:
         name: Setup TFLint
         with:
           tflint_version: v0.55.1
+
+      - name: Initialize Terraform
+        run: |
+          pushd ./clouds/aws/dev
+          terraform init
+          popd
+
+      - name: Validate Terraform
+        run: |
+          pushd ./clouds/aws/dev
+          terraform validate
+          popd
 
       - name: Show version
         run: tflint --version
