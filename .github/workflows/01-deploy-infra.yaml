@@ -33,4 +33,4 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
 
       - name: Run TFLint
-        run: tflint --recursive --deep --format compact
+        run: tflint --recursive --format compact
