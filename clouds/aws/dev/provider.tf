@@ -4,6 +4,14 @@ terraform {
       source = "hashicorp/aws"
       version = "5.88.0"
     }
+    kubernetes = {
+      source = "hashicorp/kubernetes"
+      version = "2.36.0"
+    }
+    helm = {
+      source = "hashicorp/helm"
+      version = "3.0.0-pre1"
+    }
   }
   backend "s3" {
     bucket         = "sandbox-assets-dev-24022025" # Same as created above
