@@ -59,7 +59,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: dev-tfplan
-          path: ./artifacts/dev.tfplan
+          path: ${{ github.workspace }}/artifacts/dev.tfplan
 
       - name: HashiCorp - Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
@@ -88,5 +88,5 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
           pushd ./clouds/aws/dev
-          terraform apply ./artifacts/dev.tfplan 
+          terraform apply ${{ github.workspace }}/artifacts/dev.tfplan 
           popd
