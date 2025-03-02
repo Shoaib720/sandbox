@@ -6,7 +6,7 @@ terraform {
     }
   }
   backend "s3" {}
-  required_version = "~> 1.10.5"
+  required_version = ">= 1.10.5, < 2.0.0"
 }
 
 provider "kubernetes" {
