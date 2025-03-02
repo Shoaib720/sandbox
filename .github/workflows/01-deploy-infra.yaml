@@ -5,6 +5,7 @@ on:
     inputs:
       environment:
         description: 'Environment to deploy'
+        type: choice
         required: true
         default: 'dev'
         options:
@@ -71,6 +72,7 @@ jobs:
         with:
           name: tfplan
           path: ${{ github.workspace }}/artifacts
+
       - name: HashiCorp - Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
 
@@ -89,6 +91,10 @@ jobs:
             -backend-config="region=$AWS_REGION" \
             -backend-config="dynamodb_table=$BACKEND_DYNAMO_TABLE"
           popd
+
+      - name: Select Terraform Workspace
+        run: |
+          terraform workspace select ${{ inputs.environment }} || terraform workspace new ${{ inputs.environment }}
 
       - name: Apply Terraform
         env:

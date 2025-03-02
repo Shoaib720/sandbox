@@ -1,8 +1,13 @@
+locals {
+  name = "${var.project}-${var.environment}"
+}
+
+
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "5.19.0"
 
-  name = "sandbox-vpc"
+  name = "${local.name}-vpc"
   cidr = "10.0.0.0/16"
 
   azs             = ["ap-south-1a", "ap-south-1b"]
@@ -18,23 +23,23 @@ module "vpc" {
 
   public_subnet_tags = {
     "kubernetes.io/role/elb"     = 1
-    "kubernetes.io/cluster/sandbox-eks" = "owned"
+    "kubernetes.io/cluster/${local.name}-eks" = "owned"
   }
 
   private_subnet_tags = {
     "kubernetes.io/role/internal-elb" = 1
-    "kubernetes.io/cluster/sandbox-eks"      = "owned"
+    "kubernetes.io/cluster/${local.name}-eks"      = "owned"
   }
 
   tags = {
-    Name = "sandbox-vpc"
+    Name = "${local.name}-vpc"
   }
 }
 
 module "eks_blueprints" {
     source  = "github.com/aws-ia/terraform-aws-eks-blueprints?ref=v4.25.0"
 
-    cluster_name    = "sandbox-eks"
+    cluster_name    = "${local.name}-eks"
     cluster_version = "1.29"
     enable_irsa     = true
 
