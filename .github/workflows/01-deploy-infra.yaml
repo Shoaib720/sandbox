@@ -5,87 +5,9 @@ on:
   
 jobs:
 
-  # validate:
-  #   name: Terraform Validate
-  #   runs-on: ubuntu-latest
-  #   continue-on-error: true
-  #   environment: dev
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
-
-  #     - name: HashiCorp - Setup Terraform
-  #       uses: hashicorp/setup-terraform@v3.1.2
-
-  #     - uses: actions/cache@v4
-  #       name: Cache plugin dir
-  #       with:
-  #         path: ~/.tflint.d/plugins
-  #         key: tflint-${{ hashFiles('.tflint.hcl') }}
-
-  #     - uses: terraform-linters/setup-tflint@v4
-  #       name: Setup TFLint
-  #       with:
-  #         tflint_version: v0.55.1
-
-  #     - name: Initialize Terraform
-  #       env:
-  #         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #         AWS_REGION: ${{ secrets.AWS_REGION }}
-  #       run: |
-  #         pushd ./clouds/aws/dev
-  #         terraform init
-  #         popd
-
-  #     - name: Validate Terraform
-  #       env:
-  #         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #         AWS_REGION: ${{ secrets.AWS_REGION }}
-  #       run: |
-  #         pushd ./clouds/aws/dev
-  #         terraform validate
-  #         popd
-
-  #     - name: Show version
-  #       run: tflint --version
-
-  #     - name: Init TFLint
-  #       run: tflint --init
-  #       env:
-  #         GITHUB_TOKEN: ${{ github.token }}
-
-  #     - name: Run TFLint
-  #       continue-on-error: true
-  #       run: tflint --recursive --format compact
-
-  #     - name: Manual Trivy Setup
-  #       uses: aquasecurity/setup-trivy@v0.2.0
-  #       with:
-  #         cache: true
-  #         version: v0.57.1
-
-  #     - name: Run Trivy vulnerability scanner in repo mode
-  #       uses: aquasecurity/trivy-action@master
-  #       with:
-  #         scan-type: 'fs'
-  #         scan-ref: '.'
-  #         ignore-unfixed: true
-  #         format: 'sarif'
-  #         output: 'trivy-results.sarif'
-  #         skip-setup-trivy: true
-  #         scanners: "vuln,secret,misconfig,license"
-
-      # - name: Upload Trivy scan results to GitHub Security tab
-      #   uses: github/codeql-action/upload-sarif@v3
-      #   with:
-      #     sarif_file: 'trivy-results.sarif'
-
   plan:
     name: Terraform Plan
     runs-on: ubuntu-latest
-    environment: dev
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -98,9 +20,16 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
+          BACKEND_BUCKET: ${{ secrets.BACKEND_BUCKET }}
+          BACKEND_KEY: ${{ secrets.BACKEND_KEY }}
+          BACKEND_DYNAMO_TABLE: ${{ secrets.BACKEND_DYNAMO_TABLE }}
         run: |
           pushd ./clouds/aws/dev
-          terraform init
+          terraform init \
+            -backend-config="bucket=$BACKEND_BUCKET" \
+            -backend-config="key=$BACKEND_KEY" \
+            -backend-config="region=$AWS_REGION" \
+            -backend-config="dynamodb_table=$BACKEND_DYNAMO_TABLE"
           popd
 
       - name: Plan Terraform
@@ -119,7 +48,7 @@ jobs:
           path: ./clouds/aws/dev/dev.tfplan
 
   apply:
-    name: Terraform Plan
+    name: Terraform Apply
     runs-on: ubuntu-latest
     environment: dev
     needs: plan
@@ -140,9 +69,16 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
+          BACKEND_BUCKET: ${{ secrets.BACKEND_BUCKET }}
+          BACKEND_KEY: ${{ secrets.BACKEND_KEY }}
+          BACKEND_DYNAMO_TABLE: ${{ secrets.BACKEND_DYNAMO_TABLE }}
         run: |
           pushd ./clouds/aws/dev
-          terraform init
+          terraform init \
+            -backend-config="bucket=$BACKEND_BUCKET" \
+            -backend-config="key=$BACKEND_KEY" \
+            -backend-config="region=$AWS_REGION" \
+            -backend-config="dynamodb_table=$BACKEND_DYNAMO_TABLE"
           popd
 
       - name: Apply Terraform
