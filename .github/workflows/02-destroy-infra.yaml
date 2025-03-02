@@ -1,0 +1,91 @@
+name: Destroy Infra
+
+on:
+  workflow_dispatch:
+  
+jobs:
+
+  plan:
+    name: Terraform Destroy Plan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: HashiCorp - Setup Terraform
+        uses: hashicorp/setup-terraform@v3.1.2
+
+      - name: Initialize Terraform
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          BACKEND_BUCKET: ${{ secrets.BACKEND_BUCKET }}
+          BACKEND_KEY: ${{ secrets.BACKEND_KEY }}
+          BACKEND_DYNAMO_TABLE: ${{ secrets.BACKEND_DYNAMO_TABLE }}
+        run: |
+          pushd ${{ github.workspace }}/clouds/aws/dev
+          terraform init \
+            -backend-config="bucket=$BACKEND_BUCKET" \
+            -backend-config="key=$BACKEND_KEY" \
+            -backend-config="region=$AWS_REGION" \
+            -backend-config="dynamodb_table=$BACKEND_DYNAMO_TABLE"
+          popd
+
+      - name: Plan Terraform
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          pushd ./clouds/aws/dev
+          terraform plan -destroy -out dev-destroy.tfplan
+          popd
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dev-destroy-tfplan
+          path: ${{ github.workspace }}/clouds/aws/dev/dev-destroy.tfplan
+
+  apply:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+    environment: dev
+    needs: plan
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: dev-destroy-tfplan
+          path: ${{ github.workspace }}/artifacts
+      - name: HashiCorp - Setup Terraform
+        uses: hashicorp/setup-terraform@v3.1.2
+
+      - name: Initialize Terraform
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          BACKEND_BUCKET: ${{ secrets.BACKEND_BUCKET }}
+          BACKEND_KEY: ${{ secrets.BACKEND_KEY }}
+          BACKEND_DYNAMO_TABLE: ${{ secrets.BACKEND_DYNAMO_TABLE }}
+        run: |
+          pushd ./clouds/aws/dev
+          terraform init \
+            -backend-config="bucket=$BACKEND_BUCKET" \
+            -backend-config="key=$BACKEND_KEY" \
+            -backend-config="region=$AWS_REGION" \
+            -backend-config="dynamodb_table=$BACKEND_DYNAMO_TABLE"
+          popd
+
+      - name: Apply Terraform
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          pushd ./clouds/aws/dev
+          terraform apply ${{ github.workspace }}/artifacts/dev-destroy.tfplan 
+          popd
