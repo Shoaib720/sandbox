@@ -51,7 +51,10 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
           pushd ${{ github.workspace }}/aws
-          terraform plan -destroy -out ${{ inputs.environment }}.tfplan -var="environment=${{ inputs.environment }}"
+          terraform plan -destroy \
+            -out ${{ inputs.environment }}.tfplan \
+            -var="environment=${{ inputs.environment }}" \
+            -var="project=sandbox"
           popd
 
       - uses: actions/upload-artifact@v4
