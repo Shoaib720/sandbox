@@ -2,6 +2,14 @@ name: Deploy Infra
 
 on:
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'dev'
+        options:
+          - dev
+          - prod
   
 jobs:
 
@@ -21,16 +29,19 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           BACKEND_BUCKET: ${{ secrets.BACKEND_BUCKET }}
-          BACKEND_KEY: ${{ secrets.BACKEND_KEY }}
           BACKEND_DYNAMO_TABLE: ${{ secrets.BACKEND_DYNAMO_TABLE }}
         run: |
-          pushd ./clouds/aws/dev
+          pushd ${{ github.workspace }}/aws
           terraform init \
             -backend-config="bucket=$BACKEND_BUCKET" \
-            -backend-config="key=$BACKEND_KEY" \
+            -backend-config="key=terraform-state/${{ inputs.environment }}/terraform.tfstate" \
             -backend-config="region=$AWS_REGION" \
             -backend-config="dynamodb_table=$BACKEND_DYNAMO_TABLE"
           popd
+
+      - name: Select Terraform Workspace
+        run: |
+          terraform workspace select ${{ inputs.environment }} || terraform workspace new ${{ inputs.environment }}
 
       - name: Plan Terraform
         env:
@@ -38,14 +49,14 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
-          pushd ./clouds/aws/dev
-          terraform plan -out dev.tfplan
+          pushd ${{ github.workspace }}/aws
+          terraform plan -out ${{ inputs.environment }}.tfplan -var="environment=${{ inputs.environment }}"
           popd
 
       - uses: actions/upload-artifact@v4
         with:
-          name: dev-tfplan
-          path: ./clouds/aws/dev/dev.tfplan
+          name: tfplan
+          path: ${{ github.workspace }}/aws/${{ inputs.environment }}.tfplan
 
   apply:
     name: Terraform Apply
@@ -58,7 +69,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: dev-tfplan
+          name: tfplan
           path: ${{ github.workspace }}/artifacts
       - name: HashiCorp - Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
@@ -69,13 +80,12 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           BACKEND_BUCKET: ${{ secrets.BACKEND_BUCKET }}
-          BACKEND_KEY: ${{ secrets.BACKEND_KEY }}
           BACKEND_DYNAMO_TABLE: ${{ secrets.BACKEND_DYNAMO_TABLE }}
         run: |
-          pushd ./clouds/aws/dev
+          pushd ${{ github.workspace }}/aws
           terraform init \
             -backend-config="bucket=$BACKEND_BUCKET" \
-            -backend-config="key=$BACKEND_KEY" \
+            -backend-config="key=terraform-state/${{ inputs.environment }}/terraform.tfstate" \
             -backend-config="region=$AWS_REGION" \
             -backend-config="dynamodb_table=$BACKEND_DYNAMO_TABLE"
           popd
@@ -86,6 +96,6 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
         run: |
-          pushd ./clouds/aws/dev
-          terraform apply ${{ github.workspace }}/artifacts/dev.tfplan 
+          pushd ${{ github.workspace }}/aws
+          terraform apply ${{ github.workspace }}/artifacts/${{ inputs.environment }}.tfplan 
           popd
