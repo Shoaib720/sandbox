@@ -59,8 +59,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: dev-tfplan
-          path: ${{ github.workspace }}/artifacts/dev.tfplan
-
+          path: ${{ github.workspace }}/artifacts
       - name: HashiCorp - Setup Terraform
         uses: hashicorp/setup-terraform@v3.1.2
 
