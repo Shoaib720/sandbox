@@ -25,6 +25,7 @@ resource "azurerm_network_security_group" "nsg_web" {
     source_address_prefix      = "*"
     destination_address_prefix = "*"
   }
+  tags = var.tags
 }
 
 resource "azurerm_network_interface" "web_private_nic01" {
@@ -37,6 +38,7 @@ resource "azurerm_network_interface" "web_private_nic01" {
     subnet_id                     = var.subnet_id
     private_ip_address_allocation = "Dynamic"
   }
+  tags = var.tags
 }
 
 resource "azurerm_network_interface_security_group_association" "nsg_nic_assoc01" {
@@ -65,6 +67,7 @@ resource "azurerm_windows_virtual_machine" "web_server01" {
     sku       = "2022-datacenter-azure-edition"
     version   = "latest"
   }
+  tags = var.tags
 }
 
 resource "azurerm_virtual_machine_extension" "private_web_server_install" {
