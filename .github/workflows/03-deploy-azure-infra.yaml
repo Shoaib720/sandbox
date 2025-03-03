@@ -11,6 +11,14 @@ on:
         options:
           - dev
           - prod
+      server_type:
+        description: 'Server type to deploy'
+        type: choice
+        required: true
+        default: 'web'
+        options:
+          - web
+          - sql
   
 jobs:
 
@@ -57,7 +65,8 @@ jobs:
           terraform plan \
             -out ${{ inputs.environment }}.tfplan \
             -var="environment=${{ inputs.environment }}" \
-            -var="project=sandbox"
+            -var="project=sandbox" \
+            -var="server_type=${{ inputs.server_type }}"
           popd
 
       - uses: actions/upload-artifact@v4
