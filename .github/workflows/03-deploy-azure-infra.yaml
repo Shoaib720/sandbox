@@ -53,7 +53,7 @@ jobs:
           ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
           ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
         run: |
-          pushd ${{ github.workspace }}azure/dev
+          pushd ${{ github.workspace }}/azure/dev
           terraform plan \
             -out ${{ inputs.environment }}.tfplan \
             -var="environment=${{ inputs.environment }}" \
@@ -63,7 +63,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: tfplan
-          path: ${{ github.workspace }}azure/dev/${{ inputs.environment }}.tfplan
+          path: ${{ github.workspace }}/azure/dev/${{ inputs.environment }}.tfplan
 
   apply:
     name: Terraform Apply
@@ -92,7 +92,7 @@ jobs:
           BACKEND_CONTAINER_NAME: ${{ vars.BACKEND_CONTAINER_NAME }}
           BACKEND_RESOURCE_GROUP_NAME: ${{ vars.BACKEND_RESOURCE_GROUP_NAME }}
         run: |
-          pushd ${{ github.workspace }}azure/dev
+          pushd ${{ github.workspace }}/azure/dev
           terraform init \
             -backend-config="resource_group_name=$BACKEND_RESOURCE_GROUP_NAME" \
             -backend-config="key=terraform-state/${{ inputs.environment }}/terraform.tfstate" \
@@ -111,6 +111,6 @@ jobs:
           ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
           ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
         run: |
-          pushd ${{ github.workspace }}azure/dev
+          pushd ${{ github.workspace }}/azure/dev
           terraform apply ${{ github.workspace }}/artifacts/${{ inputs.environment }}.tfplan 
           popd
